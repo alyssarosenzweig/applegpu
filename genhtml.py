@@ -410,8 +410,8 @@ round-to-odd may be an adequate approximation).
 ''')
 
 for o in instruction_descriptors:
-	if o.documentation_skip or o.name.startswith('TODO.'): # or not hasattr(o, 'pseudocode'):
-		continue
+#	if o.documentation_skip or o.name.startswith('TODO.'): # or not hasattr(o, 'pseudocode'):
+#		continue
 
 	if hasattr(o, 'documentation_begin_group'):
 		print('<h2>' + html(o.documentation_begin_group) + '</h2>')
