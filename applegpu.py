@@ -1989,7 +1989,6 @@ class MemoryRegDesc(OperandDesc):
 		fields[self.name] = value
 		fields[self.name + 't'] = flags
 
-
 class ThreadgroupMemoryRegDesc(OperandDesc):
 	# TODO: exactly the same as MemoryRegDesc except for the offsets?
 	def __init__(self, name):
@@ -2005,7 +2004,10 @@ class ThreadgroupMemoryRegDesc(OperandDesc):
 
 		value = fields[self.name]
 
-		count = bin(fields['mask']).count('1')
+		if 'mask' in fields:
+			count = bin(fields['mask']).count('1')
+		else:
+			count = 1
 
 		if flags == 0b0:
 			return RegisterTuple(Reg16(value + i) for i in range(count))
@@ -2036,6 +2038,24 @@ class ThreadgroupMemoryRegDesc(OperandDesc):
 		fields['mask'] = (1 << len(regs)) - 1
 		fields[self.name] = value
 		fields[self.name + 't'] = flags
+
+
+
+
+class TileToMemoryRegDesc(OperandDesc):
+	# TODO: exactly the same as MemoryRegDesc except for the offsets?
+	def __init__(self, name):
+		super().__init__(name)
+		self.add_merged_field(self.name, [
+			(9, 6, self.name),
+			(60, 2, self.name + 'x'),
+		])
+
+	def decode_impl(self, fields, allow64):
+		return Reg16(fields[self.name])
+
+	def decode(self, fields):
+		return self.decode_impl(fields, allow64=False)
 
 #@document_operand
 class ThreadgroupMemoryBaseDesc(OperandDesc):
@@ -4165,11 +4185,19 @@ for op, mnem in [
 	instruction_descriptors.append(o)
 
 
-o = InstructionDesc('writeout', size=4)
+o = InstructionDesc('wait_pix', size=4)
 o.add_constant(0, 8, 0b01001000)
-o.add_operand(ImmediateDesc('i', 8, 10)) # x: 26,2
-o.add_operand(ImmediateDesc('j', 22, 2)) # x: 26,2
+o.add_operand(ImmediateDesc('i', 8, 10))
+o.add_operand(ImmediateDesc('j', 22, 2))
 instruction_descriptors.append(o)
+
+o = InstructionDesc('signal_pix', size=4)
+o.add_constant(0, 8, 0b01011000)
+o.add_operand(ImmediateDesc('i', 8, 10))
+o.add_operand(ImmediateDesc('j', 22, 2))
+instruction_descriptors.append(o)
+
+
 
 
 # wait for a load
@@ -4879,6 +4907,7 @@ class SampleURegDesc(OperandDesc):
 		if fields['Tt'] & 1:
 			return UReg64(v * 2)
 		else:
+			return v
 			return None
 
 SAMPLE_MASK_DESCRIPTIONS = {}
@@ -5210,11 +5239,17 @@ class UnkB1InstructionDesc(InstructionDesc):
 	def __init__(self):
 		super().__init__('TODO.unkB1', size=(6, 10))
 		self.add_constant(0, 8, 0xB1)
+		self.add_operand(TileToMemoryRegDesc('R')) #actually w
 		self.add_constant(16, 14, 0)
-		self.add_constant(38, 3, 0)
+		self.add_operand(ImmediateDesc('unk', 31, 1)) #0x1
+		self.add_operand(TextureDesc('T')) #
+		self.add_constant(40, 1, 0)
+		self.add_operand(ImmediateDesc('unk2', 41, 7)) #0x4a
 		self.add_constant(48, 5, 0)
-		self.add_constant(58, 4, 0)
-		self.add_constant(68, 12, 0)
+		self.add_constant(58, 2, 0)
+		self.add_operand(EnumDesc('F', [(8, 1, 'F'), (64, 3, 'Fx')], None, MEMORY_FORMATS))
+		self.add_operand(ImmediateDesc('unk3', 67, 1))
+		self.add_constant(68, 10, 0)
 
 class Reg32_4_4_Desc(OperandDesc):
 	def __init__(self, name, start, start2):
@@ -5326,6 +5361,16 @@ class SampleMaskInstructionDesc(MaskedInstructionDesc):
 		self.add_operand(ImmediateDesc('S', [(16, 6, 'S'), (26, 2, 'Sx')])) # Immediate sample mask
 		self.add_constant(15, 1, 0)
 		self.add_operand(ImmediateDesc('sample_mask_is_immediate', 23, 1))
+
+@register
+class SampleMaskRegInstructionDesc(MaskedInstructionDesc):
+	def __init__(self):
+		super().__init__('sample_mask_reg', size=4)
+		self.add_constant(0, 15, 0x7f41)
+		self.add_operand(ImmediateDesc('S', [(16, 6, 'S'), (26, 2, 'Sx')])) # Immediate sample mask
+		self.add_operand(ImmediateDesc('sample_mask_is_immediate', 23, 1))
+
+
 
 @register
 class UnkF59InstructionDesc(MaskedInstructionDesc):
