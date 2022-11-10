@@ -5249,7 +5249,9 @@ class UnkB1InstructionDesc(InstructionDesc):
 		self.add_operand(ImmediateDesc('unk', 31, 1)) #0x1
 		self.add_operand(TextureDesc('T')) #
 		self.add_constant(40, 1, 0)
-		self.add_operand(ImmediateDesc('unk2', 41, 7)) #0x4a
+		# 37 for 2D
+		# 38 for 2D MSAA 4x
+		self.add_operand(ImmediateDesc('unk2', 41, 7))
 		self.add_constant(48, 5, 0)
 		self.add_constant(58, 2, 0)
 		self.add_operand(EnumDesc('F', [(8, 1, 'F'), (64, 3, 'Fx')], None, MEMORY_FORMATS))
