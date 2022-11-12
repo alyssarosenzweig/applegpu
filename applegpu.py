@@ -1927,27 +1927,72 @@ class MemoryBaseDesc(OperandDesc):
 		fields[self.name] = r.n << 1
 
 class SampleMaskDesc(OperandDesc):
-	def __init__(self, name):
+	def __init__(self, name, off=42, offx=56, offt=22, flags_type=2):
 		super().__init__(name)
 		self.add_merged_field(self.name, [
-			(42, 6, self.name),
-			(56, 2, self.name + 'x'),
+			(off, 6, self.name),
+			(offx, 2, self.name + 'x'),
 		])
-		self.add_field(22, 2, self.name + 't')
+		self.add_field(offt, flags_type, self.name + 't')
+		assert(flags_type in [1, 2])
+		self.flags_type = flags_type
 
 	def decode(self, fields):
 		flags = fields[self.name + 't']
 		value = fields[self.name]
 
-		if flags == 0b0:
-			return Immediate(value)
-		elif flags == 0b1:
-			return Reg16(value)
-		else:
+		if flags >= 2:
 			assert(0)
+
+		if (flags == 0b0) == (self.flags_type == 2):
+			return Immediate(value)
+		else:
+			return Reg16(value)
 
 	def encode_string(self, fields, opstr):
 		assert(0)
+
+class DiscardMaskDesc(OperandDesc):
+	def __init__(self, name):
+		super().__init__(name)
+		self.add_merged_field(self.name, [
+			(16, 6, self.name),
+			(26, 2, self.name + 'x')
+		])
+		self.add_field(23, 1, self.name + 't')
+
+	def decode(self, fields):
+		value = fields[self.name]
+		flags = fields[self.name + 't']
+		if flags == 0:
+			return Reg16(value)
+		else:
+			return Immediate(value)
+
+	def encode_string(self, fields, opstr):
+		assert(0)
+
+
+class ZSDesc(OperandDesc):
+	def __init__(self, name):
+		super().__init__(name)
+		self.add_merged_field(self.name, [
+			(16, 6, self.name),
+			#(offx, 2, self.name + 'x'), #XXX: where is the extension?
+		])
+		self.add_field(29, 1, 'z')
+		self.add_field(30, 1, 's')
+
+	def decode(self, fields):
+		value = fields[self.name]
+		count = (2 if fields['z'] else 0) + (1 if fields['s'] else 0)
+		assert(count > 0 and "otherwise the instr is pointless")
+		# Unclear how alignment requirements work
+		return RegisterTuple(Reg16(value + i) for i in range(count))
+
+	def encode_string(self, fields, opstr):
+		assert(0)
+
 
 class MemoryRegDesc(OperandDesc):
 	def __init__(self, name, off=10, offx=40, offt=49):
@@ -4406,7 +4451,8 @@ class IterDesc(InstructionDesc):
 		self.add_operand(CFDesc('I', 16, 58))
 		self.add_operand(CFPerspectiveDesc('J', 24, 60))
 
-		self.add_operand(ImmediateDesc('q0', 32, 1))
+		# If sample-rate interpolation
+		self.add_operand(ImmediateDesc('sample_id', 32, 2))
 		self.add_operand(EnumDesc('forwarding', 46, 1, {
 			0: 'forward',
 			1: 'no_forward'
@@ -5038,7 +5084,7 @@ class CoordsDesc(OperandDesc):
 
 		# not really clear how the alignment requirement works
 		if extra:
-			t = RegisterTuple(Reg16((value) + i) for i in range(count * 2 + 1))
+			t = RegisterTuple(Reg16((value) + i) for i in range(count * 2 + extra))
 		else:
 			t = RegisterTuple(Reg32((value >> 1) + i) for i in range(count))
 
@@ -5251,12 +5297,17 @@ class UnkB1InstructionDesc(InstructionDesc):
 		super().__init__('TODO.unkB1', size=(6, 10))
 		self.add_constant(0, 8, 0xB1)
 		self.add_operand(TileToMemoryRegDesc('R')) #actually w
-		self.add_constant(16, 14, 0)
+		# 2 if non-MSAA 2D array, 0 otherwise
+		# XXX: register operand for the layer r1l
+		self.add_operand(ImmediateDesc('q0', 16, 14))
 		self.add_operand(ImmediateDesc('unk', 31, 1)) #0x1
 		self.add_operand(TextureDesc('T')) #
-		self.add_constant(40, 1, 0)
-		# 37 for 2D
-		# 38 for 2D MSAA 4x
+		# 1 if non-MSAA 2D array, 0 otherwise
+		# XXX: register operand for the layer r1l
+		self.add_operand(ImmediateDesc('q1', 40, 1))
+		# 36 for 2D MSAA Array (layer? in r0h, 0 in r0l..)
+		# 37 for 2D or 2D array (layer in r1l)
+		# 38 for 2D MSAA
 		self.add_operand(ImmediateDesc('unk2', 41, 7))
 		self.add_constant(48, 5, 0)
 		self.add_constant(58, 2, 0)
@@ -5366,22 +5417,26 @@ class Unk75AltInstructionDesc(MaskedInstructionDesc):
 		# TODO: 75 0A 10 05 10 80 12 00
 
 
+# 
 @register
 class SampleMaskInstructionDesc(MaskedInstructionDesc):
 	def __init__(self):
 		super().__init__('sample_mask', size=4)
 		self.add_constant(0, 8, 0xC1)
-		self.add_operand(ImmediateDesc('S', [(16, 6, 'S'), (26, 2, 'Sx')])) # Immediate sample mask
+		self.add_operand(SampleMaskDesc('S', offt=8, off=9, offx=24, flags_type=1))
+		self.add_operand(DiscardMaskDesc('M'))
 		self.add_constant(15, 1, 0)
-		self.add_operand(ImmediateDesc('sample_mask_is_immediate', 23, 1))
 
 @register
-class SampleMaskRegInstructionDesc(MaskedInstructionDesc):
+class ZSEmitInstructionDesc(MaskedInstructionDesc):
 	def __init__(self):
-		super().__init__('sample_mask_reg', size=4)
-		self.add_constant(0, 15, 0x7f41)
-		self.add_operand(ImmediateDesc('S', [(16, 6, 'S'), (26, 2, 'Sx')])) # Immediate sample mask
-		self.add_operand(ImmediateDesc('sample_mask_is_immediate', 23, 1))
+		super().__init__('zs_emit', size=4)
+		self.add_constant(0, 8, 0x41)
+		self.add_constant(15, 1, 0)
+		self.add_operand(SampleMaskDesc('S', offt=8, off=9, offx=24, flags_type=1))
+		self.add_operand(ZSDesc('T'))
+		self.add_operand(ImmediateDesc('u0', 22, 2))
+		self.add_operand(ImmediateDesc('u1', 26, 2))
 
 
 
