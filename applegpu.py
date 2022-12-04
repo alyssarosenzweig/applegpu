@@ -1978,7 +1978,7 @@ class ZSDesc(OperandDesc):
 		super().__init__(name)
 		self.add_merged_field(self.name, [
 			(16, 6, self.name),
-			#(offx, 2, self.name + 'x'), #XXX: where is the extension?
+			(26, 2, self.name + 'x')
 		])
 		self.add_field(29, 1, 'z')
 		self.add_field(30, 1, 's')
@@ -2098,7 +2098,7 @@ class TileToMemoryRegDesc(OperandDesc):
 		super().__init__(name)
 		self.add_merged_field(self.name, [
 			(9, 6, self.name),
-			(60, 2, self.name + 'x'),
+			(56, 2, self.name + 'x'),
 		])
 
 	def decode_impl(self, fields, allow64):
@@ -5436,7 +5436,6 @@ class ZSEmitInstructionDesc(MaskedInstructionDesc):
 		self.add_operand(SampleMaskDesc('S', offt=8, off=9, offx=24, flags_type=1))
 		self.add_operand(ZSDesc('T'))
 		self.add_operand(ImmediateDesc('u0', 22, 2))
-		self.add_operand(ImmediateDesc('u1', 26, 2))
 
 
 
