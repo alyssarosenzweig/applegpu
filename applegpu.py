@@ -2090,6 +2090,21 @@ class ThreadgroupMemoryRegDesc(OperandDesc):
 		fields[self.name] = value
 		fields[self.name + 't'] = flags
 
+class TileToMemoryRegDesc(OperandDesc):
+	# TODO: exactly the same as MemoryRegDesc except for the offsets?
+	def __init__(self, name):
+		super().__init__(name)
+		self.add_merged_field(self.name, [
+			(9, 6, self.name),
+			(56, 2, self.name + 'x'),
+		])
+
+	def decode_impl(self, fields, allow64):
+		return Reg16(fields[self.name])
+
+	def decode(self, fields):
+		return self.decode_impl(fields, allow64=False)
+
 #@document_operand
 class ThreadgroupMemoryBaseDesc(OperandDesc):
 	def __init__(self, name):
@@ -5547,13 +5562,26 @@ class Unk20InstructionDesc(InstructionDesc):
 class UnkB1InstructionDesc(InstructionDesc):
 	documentation_html = '<p>The last four bytes are omitted if L=0.</p>'
 	def __init__(self):
-		super().__init__('TODO.unkB1', size=(6, 10))
+		super().__init__('image_write_block', size=(6, 10))
 		self.add_constant(0, 8, 0xB1)
-		self.add_constant(16, 14, 0)
-		self.add_constant(38, 3, 0)
+		self.add_operand(TileToMemoryRegDesc('R')) #actually w
+		# 2 if non-MSAA 2D array, 0 otherwise
+		# XXX: register operand for the layer r1l
+		self.add_operand(ImmediateDesc('q0', 16, 14))
+		self.add_operand(ImmediateDesc('unk', 31, 1)) #0x1
+		self.add_operand(TextureDesc('T')) #
+		# 1 if non-MSAA 2D array, 0 otherwise
+		# XXX: register operand for the layer r1l
+		self.add_operand(ImmediateDesc('q1', 40, 1))
+		# 36 for 2D MSAA Array (layer? in r0h, 0 in r0l..)
+		# 37 for 2D or 2D array (layer in r1l)
+		# 38 for 2D MSAA
+		self.add_operand(ImmediateDesc('unk2', 41, 7))
 		self.add_constant(48, 5, 0)
-		self.add_constant(58, 4, 0)
-		self.add_constant(68, 12, 0)
+		self.add_constant(58, 2, 0)
+		self.add_operand(EnumDesc('F', [(8, 1, 'F'), (64, 3, 'Fx')], None, MEMORY_FORMATS))
+		self.add_operand(ImmediateDesc('unk3', 67, 1))
+		self.add_constant(68, 10, 0)
 
 class Reg32_4_4_Desc(OperandDesc):
 	def __init__(self, name, start, start2):
