@@ -5733,9 +5733,11 @@ class ImageWrite(MaskedInstructionDesc):
 			1: 'rtz', # round to zero
 		}))
 
+		# Likely the wait group
+		self.add_operand(ImmediateDesc('g', 30, 1))
+
 		# All gaps below
 		self.add_operand(ImmediateDesc('u1', 23, 1))  # 1
-		self.add_operand(ImmediateDesc('u2', 30, 1))  # 0
 		self.add_operand(ImmediateDesc('u3', 43, 4))  # 9
 		self.add_operand(ImmediateDesc('u5', 54, 1))  # 0
 
