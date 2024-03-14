@@ -2950,11 +2950,15 @@ class BitopInstructionDesc(MaskedInstructionDesc):
 
 		self.binary_aliases = {
 			'0001': 'and',
+			'0010': 'andn1',
+			'0100': 'andn2',
 			'0111': 'or',
 			'0110': 'xor',
-			'1110': 'nand',
 			'1000': 'nor',
 			'1001': 'xnor',
+			'1011': 'orn1',
+			'1110': 'nand',
+			'1101': 'orn2',
 		}
 		self.unary_aliases = {
 			'1010': 'not',
@@ -4518,7 +4522,7 @@ class LdstTileDesc(InstructionDesc):
 	</p>'''
 
 	def __init__(self):
-		super().__init__('TODO.ld/st_tile', size=(8, 10))
+		super().__init__('ld/st_tile', size=(8, 10))
 
 		self.add_constant(0, 6, 0x09)
 
@@ -4537,6 +4541,7 @@ class LdstTileDesc(InstructionDesc):
 		self.add_operand(ImmediateDesc('O', [(28, 7, 'A'), (40, 2, 'Ax')]))
 		self.add_operand(SampleMaskDesc('S'))
 		self.add_operand(ImmediateDesc('C', [(16, 6, 'C'), (58, 2, 'Cx')]))
+		self.add_operand(ImmediateDesc('u1', 55, 1))
 
 	def map_to_alias(self, mnem, operands):
 		is_load = operands[0]
@@ -4900,7 +4905,7 @@ class DeviceLoadInstructionDesc(DeviceLoadStoreInstructionDesc):
 	</p>
 	'''
 	def __init__(self):
-		super().__init__('device_load', 0)
+		super().__init__('load', 0)
 		self.add_constant(26, 1, 1) # u1
 		self.add_constant(28, 2, 0) # u3
 		self.add_constant(44, 3, 4) # u4
@@ -5089,7 +5094,7 @@ class DeviceLoadInstructionDesc(DeviceLoadStoreInstructionDesc):
 @register
 class DeviceStoreInstructionDesc(DeviceLoadStoreInstructionDesc):
 	def __init__(self):
-		super().__init__('device_store', 1)
+		super().__init__('store', 1)
 		self.add_operand(ImmediateDesc('u6', 44, 1)) # store order thing?
 		self.add_constant(26, 1, 1) # u1
 		self.add_constant(28, 2, 0) # u3
@@ -5099,7 +5104,7 @@ class DeviceStoreInstructionDesc(DeviceLoadStoreInstructionDesc):
 @register
 class DeviceLoadTodoInstructionDesc(DeviceLoadStoreInstructionDesc):
 	def __init__(self):
-		super().__init__('device_load.TODO', 0)
+		super().__init__('load.TODO', 0)
 		self.add_operand(ImmediateDesc('u1', 26, 1))
 		self.add_operand(ImmediateDesc('u3', 28, 2))
 		self.add_operand(ImmediateDesc('u4', 44, 3))
@@ -5108,7 +5113,7 @@ class DeviceLoadTodoInstructionDesc(DeviceLoadStoreInstructionDesc):
 @register
 class DeviceStoreTodoInstructionDesc(DeviceLoadStoreInstructionDesc):
 	def __init__(self):
-		super().__init__('device_store.TODO', 1)
+		super().__init__('store.TODO', 1)
 		self.add_operand(ImmediateDesc('u6', 44, 1)) # store order thing?
 		self.add_operand(ImmediateDesc('u1', 26, 1))
 		self.add_operand(ImmediateDesc('u3', 28, 2))
