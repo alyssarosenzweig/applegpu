@@ -39,7 +39,10 @@ if __name__ == '__main__':
 		inp = ' '.join(sys.argv[1:]).split(';')
 		for line in inp:
 			asm_bytes = assemble_line(line)
-			print(asm_bytes.hex().ljust(32), applegpu.disassemble_bytes(asm_bytes))
+			#print(asm_bytes.hex().ljust(32), applegpu.disassemble_bytes(asm_bytes))
+
+			print('/* ', applegpu.disassemble_bytes(asm_bytes), '*/')
+			print(', '.join([f'0x{f:02x}' for f in asm_bytes]) + ',')
 	else:
 		print('usage: python3 asssemble.py [instruction text separated by semicolons]')
 		exit(1)
