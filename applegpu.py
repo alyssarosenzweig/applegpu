@@ -2956,6 +2956,7 @@ class BitopInstructionDesc(MaskedInstructionDesc):
 			'0111': 'or',
 			'0110': 'xor',
 			'1000': 'nor',
+			'1001': 'xnor',
 			'1011': 'orn1',
 			'1110': 'nand',
 			'1101': 'orn2',
