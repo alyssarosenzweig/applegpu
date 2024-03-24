@@ -5450,6 +5450,10 @@ class LodDesc(OperandDesc):
 			return RegisterTuple(Reg32((value >> 1) + i) for i in range(count))
 		elif fields['lod'] in [0b010, 0b001]:
 			return UReg16(value)
+		elif fields['lod'] == 0b1001:
+			return RegisterTuple([UReg16(value + i) for i in range(2)])
+		elif fields['lod'] == 0b1101:
+			return RegisterTuple([Reg16(value + i) for i in range(2)])
 		else:
 			assert fields['lod'] in (0b110, 0b101)
 			return Reg16(value)
@@ -5510,12 +5514,16 @@ class TextureLoadSampleBaseInstructionDesc(InstructionDesc):
 			# Argument is a 16-bit uniform
 			0b0001: 'auto_lod_bias',
 			0b0010: 'lod_min',
+			# Argument is 1x16-bit uniform
+			0b1001: 'auto_lod_bias_min',
 
 			# Argument is a 16-bit register
 			0b0101: 'auto_lod_bias',
 			0b0110: 'lod_min',
 			0b0100: 'lod_grad',
 			0b1100: 'lod_grad_min',
+			# Argument is 2x16-bit register
+			0b1101: 'auto_lod_bias_min',
 		}))
 		self.add_operand(LodDesc('D', 24, 76))
 
