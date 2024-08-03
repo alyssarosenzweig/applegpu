@@ -40,7 +40,9 @@ SR_NAMES = {
 	52: 'thread_index_in_simdgroup',
 	53: 'simdgroup_index_in_threadgroup',
 	56: 'active_thread_index_in_quadgroup',
+	57: 'total_active_threads_in_quadgroup',
 	58: 'active_thread_index_in_simdgroup',
+	59: 'total_active_threads_in_simdgroup',
 	# sample coverage mask in fragment shaders?
 	# MSAA lowering uses this
 	60: 'internal_coverage_mask',
