@@ -2002,6 +2002,30 @@ class SampleMaskDesc(OperandDesc):
 	def encode_string(self, fields, opstr):
 		assert(0)
 
+class TileCoordinateDesc(OperandDesc):
+	def __init__(self, name, off=16, offx=58, offt=55):
+		super().__init__(name)
+		self.add_merged_field(self.name, [
+			(off, 6, self.name),
+			(offx, 2, self.name + 'x'),
+		])
+		self.add_field(offt, 1, self.name + 't')
+
+	def decode(self, fields):
+		flags = fields[self.name + 't']
+		value = fields[self.name]
+
+		if (flags == 0b0):
+			return Immediate(value)
+		else:
+			# TODO: Infer count?
+			return RegisterTuple(Reg16(value + i) for i in range(2))
+
+	def encode_string(self, fields, opstr):
+		assert(0)
+
+
+
 class DiscardMaskDesc(OperandDesc):
 	def __init__(self, name):
 		super().__init__(name)
@@ -4544,8 +4568,7 @@ class LdstTileDesc(InstructionDesc):
 
 		self.add_operand(ImmediateDesc('O', [(28, 7, 'A'), (40, 2, 'Ax')]))
 		self.add_operand(SampleMaskDesc('S'))
-		self.add_operand(ImmediateDesc('C', [(16, 6, 'C'), (58, 2, 'Cx')]))
-		self.add_operand(ImmediateDesc('u1', 55, 1))
+		self.add_operand(TileCoordinateDesc('C'))
 
 	def map_to_alias(self, mnem, operands):
 		is_load = operands[0]
