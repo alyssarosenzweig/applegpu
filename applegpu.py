@@ -31,6 +31,8 @@ SR_NAMES = {
 	8:  'dispatch_threads_per_threadgroup.x',
 	9:  'dispatch_threads_per_threadgroup.y',
 	10: 'dispatch_threads_per_threadgroup.z',
+	12: 'threadgroup_width',
+	13: 'threadgroup_height',
 	20: 'core_index',
 	21: 'vm_slot',
 	48: 'thread_position_in_threadgroup.x',
